@@ -8,6 +8,7 @@
 -- constants
 
 local DID = require("globals")
+local frame_name = 'industrial-displays'
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------
 
@@ -82,9 +83,9 @@ end
 
 local function gui_close(event)
     local player = game.players[event.player_index]
-    local frame = player.gui.screen[DID.custom_gui]
+    local frame = player.gui.screen[frame_name]
     if frame then
-		set_global_player_info(event.player_index,"display_gui_location",player.gui.screen[DID.custom_gui].location)
+		set_global_player_info(event.player_index,"display_gui_location",player.gui.screen[frame_name].location)
         return frame.destroy()
     end
 	return false
@@ -245,7 +246,7 @@ local function gui_click(event)
 	-- check the entity this gui refers to - in multiplayer it could have been removed while player wasn't logged in
 	if event.player_index then
 		local player = game.players[event.player_index]
-		local frame = player.gui.screen[DID.custom_gui]
+		local frame = player.gui.screen[frame_name]
 		local last_display = get_global_player_info(player.index, "last_display")
 		if frame and (not last_display or not last_display.valid) then
 			frame.destroy()
@@ -267,7 +268,7 @@ local function create_display_gui(player, selected)
 
 	set_global_player_info(player.index,"last_display",selected)
 
-	local frame = player.gui.screen["industrial-displays"]
+	local frame = player.gui.screen[frame_name]
 	if frame then frame.destroy() end
 	player.opened = player.gui.screen
 
@@ -278,7 +279,7 @@ local function create_display_gui(player, selected)
 
 	frame = player.gui.screen.add {
 		type ="frame",
-		name = "industrial-displays",
+		name = frame_name,
 		direction = "vertical",
 		style = "display_frame",
 	}
@@ -289,6 +290,38 @@ local function create_display_gui(player, selected)
 	else
 		frame.force_auto_center()
 	end
+
+	local header = frame.add {
+		type = "flow",
+		direction = "horizontal",
+		name = "display-header",
+	}
+	header.style.horizontally_stretchable = true
+
+	-- title
+	header.add {
+		type = "label",
+		caption = {"controls.display-plate"},
+		style = "frame_title",
+	}
+
+	-- "drag filler"
+	local filler = header.add {
+		type = "empty-widget",
+		style = "draggable_space_header",
+	}
+	filler.style.natural_height = 24
+	filler.style.horizontally_stretchable = true
+	filler.drag_target = frame
+
+	-- close button
+	local close_button = header.add {
+		name = "display-header-close",
+		type = "sprite-button",
+		style = "display_small_button",
+		sprite = "utility/close_white",
+		tooltip = {"controls.close-gui"},
+	}
 
 	frame.add {
 		type = "choose-elem-button",
