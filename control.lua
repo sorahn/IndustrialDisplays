@@ -63,7 +63,7 @@ local function remove_markers(entity)
 	end
 end
 
-local function find_entity_render(entity) 
+local function find_entity_render(entity)
 	for _,id in pairs(rendering.get_all_ids(DID.mod_name)) do
 		if rendering.get_target(id).entity == entity then return id end
 	end
@@ -152,10 +152,10 @@ local function display_filter_tabs(player,filter)
 		local name = splitstring(tab.tab.name,":")
 	end
 	tabs.selected_tab_index = selected or 1 -- end of shenanigans
-	if textfield.visible then textfield.focus() end -- fix textfield focus 
+	if textfield.visible then textfield.focus() end -- fix textfield focus
 end
 
-local function toggle_search(player,element,override) 
+local function toggle_search(player,element,override)
 	local textfield = player.gui.screen[DID.custom_gui]["display-header"]["display-search-textfield"]
 	if textfield then
 		textfield.visible = override or not textfield.visible
@@ -198,7 +198,7 @@ local display_gui_click = {
 	end,
     ["display-map-marker"] = function (event)
 		local last_display = get_global_player_info(event.player_index,"last_display")
-		if last_display then 
+		if last_display then
 			if get_has_map_marker(last_display) then
 				event.element.style = "display_small_button"
 				remove_markers(last_display)
@@ -251,7 +251,7 @@ local function gui_click(event)
 			frame.destroy()
 			return
 		end
-	end	
+	end
 	-- is there a method for this element?
 	local clicked = splitstring(event.element.name,":")
 	if display_gui_click[clicked[1]] then
@@ -260,22 +260,60 @@ local function gui_click(event)
 	end
 end
 
+-- new function
 local function create_display_gui(player, selected)
+
+	if not player or not selected then return end
+
+	set_global_player_info(player.index,"last_display",selected)
+
+	local frame = player.gui.screen["industrial-displays"]
+	if frame then frame.destroy() end
+	player.opened = player.gui.screen
+
+	-- get markers and currently rendered sprite
+	local markers = next(get_map_markers(selected)) ~= nil
+	local sname, stype = get_render_sprite_info(selected)
+	local render_sprite = (sname and stype) and sname.."/"..stype or nil
+
+	frame = player.gui.screen.add {
+		type ="frame",
+		name = "industrial-displays",
+		direction = "vertical",
+		style = "display_frame",
+	}
+
+	-- update frame location if cached
+	if get_global_player_info(player.index,"display_gui_location") then
+		frame.location = get_global_player_info(player.index,"display_gui_location")
+	else
+		frame.force_auto_center()
+	end
+
+	frame.add {
+		type = "choose-elem-button",
+		caption = "Choose an Icon",
+		elem_type = "signal",
+	}
+end
+
+-- old function
+local function create_display_gui2(player, selected)
 
     if not player or not selected then return end
 
 	-- cache which entity this gui belongs to
 	set_global_player_info(player.index,"last_display",selected)
-	
+
 	-- close any existing gui
 	local frame = player.gui.screen[DID.custom_gui]
 	if frame then frame.destroy() end
 	player.opened = player.gui.screen
-	
+
 	-- get markers and currently rendered sprite
 	local markers = next(get_map_markers(selected)) ~= nil
 	local sname, stype = get_render_sprite_info(selected)
-	local render_sprite = (sname and stype) and sname.."/"..stype or nil 
+	local render_sprite = (sname and stype) and sname.."/"..stype or nil
 
 	-- create frame
 	frame = player.gui.screen.add {
@@ -284,7 +322,7 @@ local function create_display_gui(player, selected)
 		direction = "vertical",
 		style = "display_frame",
 	}
-	
+
 	-- update frame location if cached
 	if get_global_player_info(player.index,"display_gui_location") then
 		frame.location = get_global_player_info(player.index,"display_gui_location")
@@ -300,7 +338,7 @@ local function create_display_gui(player, selected)
 	}
 	header.style.bottom_padding = -4
 	header.style.horizontally_stretchable = true
-	
+
 	-- title
 	header.add {
 		type = "label",
@@ -370,14 +408,14 @@ local function create_display_gui(player, selected)
 		type = "tabbed-pane",
 		style = "display_tabbed_pane",
 	}
-	
+
 	-- build a table of info about existing items/fluids
 	-- groups of subgroups of sprites -> localised_string
 	local button_table = {}
 	for prototype_type,prototypes in pairs(DID.elem_prototypes) do
 		for _,prototype in pairs(game[prototypes]) do
 			if not DID.displays[prototype.name] and not ((prototype_type == "item" and (prototype.has_flag("hidden") or prototype.show_in_library)) or (prototype_type == "fluid" and prototype.hidden)) then
-				local group = (prototype.group.name == "fluids") and "intermediate-products" or prototype.group.name 
+				local group = (prototype.group.name == "fluids") and "intermediate-products" or prototype.group.name
 				if not DID.group_blacklist[group] then
 					if button_table[group] == nil then button_table[group] = {}	end
 					if button_table[group][prototype.subgroup.name] == nil then	button_table[group][prototype.subgroup.name] = {} end
@@ -386,7 +424,12 @@ local function create_display_gui(player, selected)
 			end
 		end
 	end
-	
+
+	-- for one,two in pairs(DID.) do
+
+	-- end
+
+
 	-- determine the biggest tab size
 	local max_rows = 0
 	for group,subgroups in pairs(button_table) do
@@ -396,7 +439,7 @@ local function create_display_gui(player, selected)
 		end
 		max_rows = math.max(rows,max_rows)
 	end
-	
+
 	-- set up tabs
 	local tab_index = 1
 	for group,subgroups in pairs(button_table) do
@@ -448,7 +491,7 @@ local function create_display_gui(player, selected)
 		end
 		tab_index = tab_index + 1
 	end
-	
+
 	-- make all tabs as big as biggest
 	for _,tab in pairs(display_tabs.tabs) do
 		tab.content.style.height = math.min(640, max_rows * 40)
@@ -506,7 +549,7 @@ script.on_event("deadlock-open-gui", function(event)
     local player = game.players[event.player_index]
 	if player.cursor_stack and player.cursor_stack.valid_for_read then return end
     local selected = player and player.selected
-    if selected and selected.valid and is_a_display(selected) then 
+    if selected and selected.valid and is_a_display(selected) then
 		if player.can_reach_entity(selected) then
 			create_display_gui(player, selected)
 		else
