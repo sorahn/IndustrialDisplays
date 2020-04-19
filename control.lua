@@ -260,6 +260,110 @@ local function gui_click(event)
 	end
 end
 
+
+local function create_new_display_gui(player, selected)
+	if not player or not selected then return end
+
+	-- cache which entity this gui belongs to
+	set_global_player_info(player.index,"last_display",selected)
+	
+	-- close any existing gui
+	local frame = player.gui.screen[DID.custom_gui]
+	if frame then frame.destroy() end
+	player.opened = player.gui.screen
+	
+	-- get markers and currently rendered sprite
+	local markers = next(get_map_markers(selected)) ~= nil
+	local sname, stype = get_render_sprite_info(selected)
+	local render_sprite = (sname and stype) and sname.."/"..stype or nil 
+
+
+	-- create frame
+	frame = player.gui.screen.add {
+		type = "frame",
+		name = DID.custom_gui,
+		direction = "vertical",
+		style = "display_frame",
+	}
+	
+	-- update frame location if cached
+	if get_global_player_info(player.index,"display_gui_location") then
+		frame.location = get_global_player_info(player.index,"display_gui_location")
+	else
+		frame.force_auto_center()
+	end
+
+	-- header
+	local header = frame.add {
+		type = "flow",
+		direction = "horizontal",
+		name = "display-header",
+	}
+	header.style.bottom_padding = -4
+	header.style.horizontally_stretchable = true
+
+
+	-- title
+	header.add {
+		type = "label",
+		caption = "Test GUI",
+		style = "frame_title",
+	}
+	header.style.bottom_padding = 5
+
+	local filler = header.add {
+		type = "empty-widget",
+		style = "draggable_space_header",
+	}
+	filler.style.natural_height = 24
+	filler.style.horizontally_stretchable = true
+	filler.drag_target = frame
+
+	local container = frame.add {
+		type = "frame",
+		direction = "vertical",
+	}
+
+	local signal_flow = container.add {
+		type = "flow",
+		name = "signal-flow",
+	}
+	signal_flow.style.vertical_align = "center"
+	signal_flow.style.bottom_padding = 5
+
+	signal_flow.add {
+		type = "choose-elem-button",
+		elem_type = "signal",
+		elem_value = "",
+		size = 32,
+	}
+
+	signal_flow.add {
+		type = "label",
+		caption = "Choose an Icon"
+	}
+
+	local map_flow = container.add {
+		type = "flow",
+	}
+
+	local map_button = map_flow.add {
+		name = "display-map-marker-large",
+		type = "sprite-button",
+		sprite = "display-map-marker",
+		style = markers and "display_small_button_active" or "display_small_button",
+		tooltip = {"controls.display-map-marker"},
+	}
+
+	map_flow.add {
+		type = "label",
+		caption = "Show on Map?",
+	}
+
+	map_button.enabled = (find_entity_render(selected) ~= nil)
+end
+
+
 local function create_display_gui(player, selected)
 
     if not player or not selected then return end
@@ -508,7 +612,7 @@ script.on_event("deadlock-open-gui", function(event)
     local selected = player and player.selected
     if selected and selected.valid and is_a_display(selected) then 
 		if player.can_reach_entity(selected) then
-			create_display_gui(player, selected)
+			create_new_display_gui(player, selected)
 		else
 			player_cannot_reach(player, selected)
 		end

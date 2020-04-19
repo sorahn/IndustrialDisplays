@@ -293,6 +293,17 @@ data:extend({
 		flags = {"gui-icon"},
     },
     {
+        type = "sprite",
+        name = "display-map-marker-large",
+        filename = get_icon_path("map-marker",64),
+        priority = "extra-high",
+        width = 64,
+        height = 64,
+        mipmap_count = 2,
+		scale = 0.5,
+		flags = {"gui-icon"},
+    },
+    {
         type = "sound",
         name = "map-marker-ping",
         variations = {
